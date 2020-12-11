@@ -135,16 +135,37 @@ static const struct drm_connector_helper_funcs vkms_wb_conn_helper_funcs = {
 	.atomic_commit = vkms_wb_atomic_commit,
 };
 
+void disable_writeback_connector(struct vkms_device *vkmsdev)
+{
+	struct vkms_output *output = &vkmsdev->output;
+
+	output->composer_enabled = false;
+	drm_connector_unregister(&output->wb_connector.base);
+	drm_connector_cleanup(&output->wb_connector.base);
+	drm_encoder_cleanup(&output->wb_connector.encoder);
+}
+
 int vkms_enable_writeback_connector(struct vkms_device *vkmsdev)
 {
 	struct drm_writeback_connector *wb = &vkmsdev->output.wb_connector;
+	int ret;
 
 	vkmsdev->output.wb_connector.encoder.possible_crtcs = 1;
 	drm_connector_helper_add(&wb->base, &vkms_wb_conn_helper_funcs);
 
-	return drm_writeback_connector_init(&vkmsdev->drm, wb,
-					    &vkms_wb_connector_funcs,
-					    &vkms_wb_encoder_helper_funcs,
-					    vkms_wb_formats,
-					    ARRAY_SIZE(vkms_wb_formats));
+	ret = drm_writeback_connector_init(&vkmsdev->drm, wb,
+					   &vkms_wb_connector_funcs,
+					   &vkms_wb_encoder_helper_funcs,
+					   vkms_wb_formats,
+					   ARRAY_SIZE(vkms_wb_formats));
+	if (!ret) {
+		vkmsdev->output.composer_enabled = true;
+		DRM_INFO("Writeback connector enabled");
+	} else {
+		DRM_ERROR("Failed to init writeback connector\n");
+	}
+
+	drm_connector_register(&wb->base);
+
+	return ret;
 }

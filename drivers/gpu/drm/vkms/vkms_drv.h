@@ -120,7 +120,12 @@ int vkms_verify_crc_source(struct drm_crtc *crtc, const char *source_name,
 void vkms_composer_worker(struct work_struct *work);
 void vkms_set_composer(struct vkms_output *out, bool enabled);
 
+/* Virtual connector */
+int enable_virtual_connector(struct vkms_device *vkmsdev);
+void disable_virtual_connector(struct vkms_device *vkmsdev);
+
 /* Writeback */
 int vkms_enable_writeback_connector(struct vkms_device *vkmsdev);
+void disable_writeback_connector(struct vkms_device *connector);
 
 #endif /* _VKMS_DRV_H_ */

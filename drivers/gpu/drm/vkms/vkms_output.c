@@ -7,6 +7,7 @@
 
 static void vkms_connector_destroy(struct drm_connector *connector)
 {
+	drm_connector_unregister(connector);
 	drm_connector_cleanup(connector);
 }
 
@@ -32,37 +33,19 @@ static const struct drm_connector_helper_funcs vkms_conn_helper_funcs = {
 	.get_modes    = vkms_conn_get_modes,
 };
 
-int vkms_output_init(struct vkms_device *vkmsdev, int index)
+int enable_virtual_connector(struct vkms_device *vkmsdev)
 {
 	struct vkms_output *output = &vkmsdev->output;
-	struct drm_device *dev = &vkmsdev->drm;
 	struct drm_connector *connector = &output->connector;
 	struct drm_encoder *encoder = &output->encoder;
-	struct drm_crtc *crtc = &output->crtc;
-	struct drm_plane *primary, *cursor = NULL;
+	struct drm_device *dev = &vkmsdev->drm;
 	int ret;
-
-	primary = vkms_plane_init(vkmsdev, DRM_PLANE_TYPE_PRIMARY, index);
-	if (IS_ERR(primary))
-		return PTR_ERR(primary);
-
-	if (enable_cursor) {
-		cursor = vkms_plane_init(vkmsdev, DRM_PLANE_TYPE_CURSOR, index);
-		if (IS_ERR(cursor)) {
-			ret = PTR_ERR(cursor);
-			goto err_cursor;
-		}
-	}
-
-	ret = vkms_crtc_init(dev, crtc, primary, cursor);
-	if (ret)
-		goto err_crtc;
 
 	ret = drm_connector_init(dev, connector, &vkms_connector_funcs,
 				 DRM_MODE_CONNECTOR_VIRTUAL);
 	if (ret) {
 		DRM_ERROR("Failed to init connector\n");
-		goto err_connector;
+		return ret;
 	}
 
 	drm_connector_helper_add(connector, &vkms_conn_helper_funcs);
@@ -93,6 +76,53 @@ err_attach:
 
 err_encoder:
 	drm_connector_cleanup(connector);
+
+	return ret;
+}
+
+void disable_virtual_connector(struct vkms_device *vkmsdev)
+{
+	struct vkms_output *output = &vkmsdev->output;
+
+	drm_connector_unregister(&output->connector);
+	drm_connector_cleanup(&output->connector);
+	drm_encoder_cleanup(&output->encoder);
+}
+
+int vkms_output_init(struct vkms_device *vkmsdev, int index)
+{
+	struct vkms_output *output = &vkmsdev->output;
+	struct drm_device *dev = &vkmsdev->drm;
+	struct drm_crtc *crtc = &output->crtc;
+	struct drm_plane *primary, *cursor = NULL;
+	int ret;
+
+	primary = vkms_plane_init(vkmsdev, DRM_PLANE_TYPE_PRIMARY, index);
+	if (IS_ERR(primary))
+		return PTR_ERR(primary);
+
+	if (enable_cursor) {
+		cursor = vkms_plane_init(vkmsdev, DRM_PLANE_TYPE_CURSOR, index);
+		if (IS_ERR(cursor)) {
+			ret = PTR_ERR(cursor);
+			goto err_cursor;
+		}
+	}
+
+	ret = vkms_crtc_init(dev, crtc, primary, cursor);
+	if (ret)
+		goto err_crtc;
+
+	ret = enable_virtual_connector(vkmsdev);
+	if (ret)
+		goto err_connector;
+
+//	if (enable_writeback)
+//		vkms_enable_writeback_connector(vkmsdev);
+
+	drm_mode_config_reset(dev);
+
+	return 0;
 
 err_connector:
 	drm_crtc_cleanup(crtc);
