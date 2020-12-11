@@ -4,11 +4,13 @@
 #define _VKMS_DRV_H_
 
 #include <linux/hrtimer.h>
+#include <linux/configfs.h>
 
 #include <drm/drm.h>
 #include <drm/drm_gem.h>
 #include <drm/drm_encoder.h>
 #include <drm/drm_writeback.h>
+
 
 #define XRES_MIN    20
 #define YRES_MIN    20
@@ -18,6 +20,8 @@
 
 #define XRES_MAX  8192
 #define YRES_MAX  8192
+
+#define MAX_CONN_CONFIGFS 10
 
 extern bool enable_cursor;
 
@@ -82,10 +86,14 @@ struct vkms_output {
 	spinlock_t composer_lock;
 };
 
+struct vkms_config_state {
+	struct config_group *connectors[MAX_CONN_CONFIGFS];
+};
 struct vkms_device {
 	struct drm_device drm;
 	struct platform_device *platform;
 	struct vkms_output output;
+	struct vkms_config_state config_state;
 };
 
 #define drm_crtc_to_vkms_output(target) \
@@ -127,5 +135,9 @@ void disable_virtual_connector(struct vkms_device *vkmsdev);
 /* Writeback */
 int vkms_enable_writeback_connector(struct vkms_device *vkmsdev);
 void disable_writeback_connector(struct vkms_device *connector);
+
+/* Configfs */
+int vkms_configfs_init(struct vkms_device *vkmsdev);
+void vkms_configfs_exit(void);
 
 #endif /* _VKMS_DRV_H_ */

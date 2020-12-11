@@ -161,6 +161,12 @@ static int __init vkms_init(void)
 	if (ret)
 		goto out_devres;
 
+	ret = vkms_configfs_init(vkms_device);
+	if (ret) {
+		DRM_ERROR("Could not initialize configfs");
+		goto out_devres;
+	}
+
 	ret = drm_dev_register(&vkms_device->drm, 0);
 	if (ret)
 		goto out_devres;
@@ -191,6 +197,10 @@ static void __exit vkms_exit(void)
 	drm_atomic_helper_shutdown(&vkms_device->drm);
 	devres_release_group(&pdev->dev, NULL);
 	platform_device_unregister(pdev);
+
+	vkms_configfs_exit();
+
+
 }
 
 module_init(vkms_init);
