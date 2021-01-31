@@ -6,6 +6,7 @@
 #include <drm/drm_vblank.h>
 
 #include "vkms_drv.h"
+//#include "vkms_composer.c"
 
 static enum hrtimer_restart vkms_vblank_simulate(struct hrtimer *timer)
 {
@@ -218,13 +219,19 @@ static int vkms_crtc_atomic_check(struct drm_crtc *crtc,
 static void vkms_crtc_atomic_enable(struct drm_crtc *crtc,
 				    struct drm_atomic_state *state)
 {
-	drm_crtc_vblank_on(crtc);
+	struct drm_crtc_state *crtc_state = drm_atomic_get_new_crtc_state(state,
+									  crtc);
+	struct vkms_crtc_state *vkms_state = to_vkms_crtc_state(crtc_state);
+
+	//drm_crtc_vblank_on(crtc);
+	vkms_crtc_composer(vkms_state);
 }
 
 static void vkms_crtc_atomic_disable(struct drm_crtc *crtc,
 				     struct drm_atomic_state *state)
 {
-	drm_crtc_vblank_off(crtc);
+	//drm_crtc_vblank_off(crtc);
+	printk(KERN_INFO "disable vblank disabled, do nothing");
 }
 
 static void vkms_crtc_atomic_begin(struct drm_crtc *crtc,
