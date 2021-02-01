@@ -288,8 +288,9 @@ void vkms_crtc_composer(struct vkms_crtc_state *crtc_state)
 		spin_unlock_irq(&out->composer_lock);
 	} else
 		kfree(vaddr_out);
-
-	drm_crtc_add_crc_entry(crtc, true, crtc_state->frame_start++, &crc32);
+	
+	printk(KERN_INFO "moi before the crc works\n");
+	drm_crtc_add_crc_entry(crtc, true, 0, &crc32);
 }
 
 static const char * const pipe_crc_sources[] = {"auto"};
