@@ -221,8 +221,11 @@ static void vkms_crtc_atomic_enable(struct drm_crtc *crtc,
 {
 	struct vkms_device *vkmsdev = drm_device_to_vkms_device(crtc->dev);
 
-	if (vkmsdev->config->virtual_hw != 1)
+	if (!vkmsdev->config->virtual_hw) {
+		printk(KERN_INFO "entered vblank on");
 		drm_crtc_vblank_on(crtc);
+	}
+
 }
 
 static void vkms_crtc_atomic_disable(struct drm_crtc *crtc,
@@ -230,9 +233,10 @@ static void vkms_crtc_atomic_disable(struct drm_crtc *crtc,
 {
 	struct vkms_device *vkmsdev = drm_device_to_vkms_device(crtc->dev);
 
-	if (vkmsdev->config->virtual_hw != 1)
+	if (!vkmsdev->config->virtual_hw) {
 		drm_crtc_vblank_off(crtc);
-	else
+		printk(KERN_INFO "entered vblank disable");
+	} else
 		printk(KERN_INFO "disable vblank disabled, do nothing");
 }
 
@@ -254,12 +258,12 @@ static void vkms_crtc_atomic_flush(struct drm_crtc *crtc,
 	struct vkms_crtc_state *vkms_state = to_vkms_crtc_state(crtc->state);
 	struct vkms_device *vkmsdev = drm_device_to_vkms_device(crtc->dev);
 
-	if (vkmsdev->config->virtual_hw == 1)
+	if (vkmsdev->config->virtual_hw)
 		vkms_crtc_composer(vkms_state);
 
 	if (crtc->state->event) {
 		spin_lock(&crtc->dev->event_lock);
-
+		printk(KERN_INFO "entered atomic flush vblank enabled, vhw disabled");
 
 		if (drm_crtc_vblank_get(crtc) != 0)
 			drm_crtc_send_vblank_event(crtc, crtc->state->event);
