@@ -261,11 +261,11 @@ static void vkms_crtc_atomic_flush(struct drm_crtc *crtc,
 	if (vkmsdev->config->virtual_hw)
 		vkms_crtc_composer(vkms_state);
 
-	if (crtc->state->event) {
+	if ((crtc->state->event) && (!vkmsdev->config->virtual_hw)) {
 		spin_lock(&crtc->dev->event_lock);
-		printk(KERN_INFO "entered atomic flush vblank enabled, vhw disabled");
+		printk(KERN_INFO "entered atomic flush crtcstateevent thingy");
 
-		if (drm_crtc_vblank_get(crtc) != 0)
+		if (drm_crtc_vblank_get(crtc) != 0 )
 			drm_crtc_send_vblank_event(crtc, crtc->state->event);
 		else
 			drm_crtc_arm_vblank_event(crtc, crtc->state->event);

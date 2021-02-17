@@ -165,11 +165,11 @@ static int vkms_create(struct vkms_config *config)
 	}
 
 
-	if (vkms_device->config->virtual_hw)
-		vkms_device->drm.irq_enabled = false;
-	else {
-		vkms_device->drm.irq_enabled = true;
+	vkms_device->drm.irq_enabled = !vkms_device->config->virtual_hw;
+
+	if (!vkms_device->config->virtual_hw) {
 		ret = drm_vblank_init(&vkms_device->drm, 1);
+		printk(KERN_INFO "in the drm vblank_init loop");
 		if (ret) {
 			DRM_ERROR("Failed to vblank\n");
 			goto out_devres;
