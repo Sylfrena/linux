@@ -168,7 +168,7 @@ static int vkms_create(struct vkms_config *config)
 		goto out_devres;
 	}
 
-	vkms_device->drm.irq_enabled = !vkms_device->config->virtual_hw;
+//	vkms_device->drm.irq_enabled = !vkms_device->config->virtual_hw;
 
 	if (!vkms_device->config->virtual_hw) {
 		ret = drm_vblank_init(&vkms_device->drm, 1);
