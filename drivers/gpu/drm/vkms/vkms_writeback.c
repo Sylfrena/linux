@@ -120,6 +120,9 @@ static void vkms_wb_atomic_commit(struct drm_connector *conn,
 
 	spin_lock_irq(&output->composer_lock);
 	crtc_state->active_writeback = conn_state->writeback_job->priv;
+	
+	printk(KERN_CRIT "active writeback from wb is %p", crtc_state->active_writeback);
+	
 	crtc_state->wb_pending = true;
 	spin_unlock_irq(&output->composer_lock);
 	drm_writeback_queue_job(wb_conn, connector_state);

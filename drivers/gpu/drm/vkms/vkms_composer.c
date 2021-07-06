@@ -183,8 +183,16 @@ static int compose_active_planes(void **vaddr_out,
 	struct drm_gem_shmem_object *shmem_obj = to_drm_gem_shmem_obj(gem_obj);
 	int i;
 
+	printk(KERN_CRIT "kzalloc size(outta if) is %lu\n", shmem_obj->base.size);
+	
+	//if (shmem_obj->base.size > 6000000) 
+	//	shmem_obj->base.size = 3145728;
+
+	printk(KERN_CRIT "kzalloc size(outta if, after) is %lu\n", shmem_obj->base.size);
+
 	if (!*vaddr_out) {
-		*vaddr_out = kzalloc(shmem_obj->base.size, GFP_KERNEL);
+		printk(KERN_CRIT "kzalloc size is %lu\n", shmem_obj->base.size);
+		*vaddr_out = kvmalloc(shmem_obj->base.size, GFP_KERNEL	);
 		if (!*vaddr_out) {
 			DRM_ERROR("Cannot allocate memory for output frame.");
 			return -ENOMEM;
@@ -217,6 +225,8 @@ int vkms_composer_common(struct vkms_crtc_state *crtc_state,
 	void *vaddr_out = NULL;
 	int ret;
 
+	//printk(KERN_CRIT "NOT successful\n");
+
 	if (crtc_state->num_active_planes >= 1) {
 		act_plane = crtc_state->active_planes[0];
 		if (act_plane->base.plane->type == DRM_PLANE_TYPE_PRIMARY)
@@ -225,14 +235,28 @@ int vkms_composer_common(struct vkms_crtc_state *crtc_state,
 	
 	if (!primary_composer)
 		return -EINVAL;
-	if (wb_pending)
+	if (wb_pending) {
+		printk(KERN_CRIT "I reach vaddr_out in common\n");
+		printk(KERN_CRIT "active writeback from common is %p", crtc_state->active_writeback);
 		vaddr_out = crtc_state->active_writeback;
+		printk(KERN_CRIT "vaddr out is %p", vaddr_out);
+	}
 
 	ret = compose_active_planes(&vaddr_out, primary_composer, crtc_state);
+	printk(KERN_CRIT "ret is %d", ret);
 	if (ret) {
-		if (ret == -EINVAL && !wb_pending)
-			kfree(vaddr_out);
-		return -EINVAL;
+		if ((ret == -EINVAL || ret == -ENOMEM) && !wb_pending){
+			printk(KERN_CRIT "I reach kfree(vaddr_out) in common\n");
+			kvfree(vaddr_out);
+		} 
+		/*if (ret == -ENOMEM){
+                        printk(KERN_CRIT "I reach  enomem kfree(vaddr_out) in common\n");
+			*crc32 = compute_crc(vaddr_out, primary_composer);
+                        kfree(vaddr_out);
+                }*/
+		
+		printk(KERN_CRIT "i reach this einval lol");
+		return ret;
 	}
 
 	*crc32 = compute_crc(vaddr_out, primary_composer);
@@ -243,7 +267,8 @@ int vkms_composer_common(struct vkms_crtc_state *crtc_state,
 		crtc_state->wb_pending = false;
 		spin_unlock_irq(&out->composer_lock);
 	} else {
-		kfree(vaddr_out);
+		printk(KERN_CRIT "I reach  last kfree vaddr_out in common\n");
+		kvfree(vaddr_out);
 	}
 
 	return 0;
@@ -280,6 +305,8 @@ void vkms_composer_worker(struct work_struct *work)
 	crtc_state->crc_pending = false;
 	spin_unlock_irq(&out->composer_lock);
 
+	printk(KERN_CRIT "wb_pending in composer_worker is %d\n", wb_pending);
+
 	/*
 	 * We raced with the vblank hrtimer and previous work already computed
 	 * the crc, nothing to do.
@@ -303,6 +330,10 @@ void vkms_crtc_composer(struct vkms_crtc_state *crtc_state)
 	struct vkms_output *out = drm_crtc_to_vkms_output(crtc);
 	u32 crc32 = 0;
 	int ret;
+
+	//crtc_state->wb_pending = true;
+
+	printk(KERN_CRIT "wb_pending in crtc_composer is %d\n", crtc_state->wb_pending);
 
 	ret = vkms_composer_common(crtc_state, out, crtc_state->wb_pending, &crc32);
 	if (ret == -EINVAL)

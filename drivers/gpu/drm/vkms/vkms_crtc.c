@@ -279,6 +279,9 @@ static void vkms_virtual_crtc_atomic_flush(struct drm_crtc *crtc,
 
 	vkms_crtc_composer(vkms_state);
 
+	printk(KERN_CRIT "active wb from vkms_virtual_atomic_flush is %p", vkms_state->active_writeback);
+
+
 	vkms_output->composer_state = to_vkms_crtc_state(crtc->state);
 }
 
