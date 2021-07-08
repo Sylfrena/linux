@@ -229,7 +229,7 @@ int vkms_composer_common(struct vkms_crtc_state *crtc_state,
 
 	if (crtc_state->num_active_planes >= 1) {
 		act_plane = crtc_state->active_planes[0];
-		if (act_plane->base.plane->type == DRM_PLANE_TYPE_PRIMARY)
+		if (act_plane->base.base.plane->type == DRM_PLANE_TYPE_PRIMARY)
 			primary_composer = act_plane->composer;
 	}
 	
